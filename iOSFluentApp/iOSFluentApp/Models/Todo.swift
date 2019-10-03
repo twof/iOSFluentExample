@@ -5,22 +5,34 @@
 //  Created by Alex Reilly on 10/3/19.
 //  Copyright © 2019 Alex Reilly. All rights reserved.
 //
-import FluentSQLite
+import FluentKit
 
-/// A single entry of a Todo list.
-final class Todo: SQLiteModel {
-    /// The unique identifier for this `Todo`.
+final class Todo: Model {
+    static let schema = "todos"
+
+    @ID(key: "id")
     var id: Int?
 
-    /// A title describing what this `Todo` entails.
+    @Field(key: "title")
     var title: String
 
-    /// Creates a new `Todo`.
+    init() { }
+
     init(id: Int? = nil, title: String) {
         self.id = id
         self.title = title
     }
 }
 
-/// Allows `Todo` to be used as a dynamic migration.
-extension Todo: Migration { }
+struct CreateTodo: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("todos")
+            .field("id", .int, .identifier(auto: true))
+            .field("title", .string, .required)
+            .create()
+    }
+
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema("todos").delete()
+    }
+}

@@ -7,26 +7,18 @@
 //
 
 import SwiftUI
-import FluentSQLite
+import FluentSQLiteDriver
 
 struct DatabaseManager {
-  let db: SQLiteDatabase
   let group: MultiThreadedEventLoopGroup
-  let test: DatabaseIdentifier<SQLiteDatabase>
-  var config: DatabasesConfig
-  let container: BasicContainer
-  let databases: Databases
-  public let pool: DatabaseConnectionPool<ConfiguredDatabase<SQLiteDatabase>>
+  public let pool: NIOThreadPool
+  public var connectionPool: ConnectionPool<SQLiteConnectionSource>!
 
   init() {
-    self.db = try! SQLiteDatabase(storage: .memory)
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    self.test = "test"
-    self.config = DatabasesConfig()
-    config.add(database: db, as: test)
-    self.container = BasicContainer(config: .init(), environment: .testing, services: .init(), on: group)
-    self.databases = try! config.resolve(on: container)
-    self.pool = try! databases.requireDatabase(for: test).newConnectionPool(config: .init(maxConnections: 20), on: self.group)
+    self.pool = .init(numberOfThreads: 2)
+    let db = SQLiteConnectionSource(configuration: .init(storage: .memory), threadPool: self.pool, on: self.group.next())
+    self.connectionPool = ConnectionPool(config: .init(maxConnections: 8), source: db)
   }
 }
 
@@ -38,33 +30,48 @@ struct ContentView: View {
     Group {
       Button(action: {
         print("Prepare")
-        self.databaseManager.pool.requestConnection().whenSuccess { (conn) in
-          Todo.prepare(on: conn).whenComplete {
+        var databases = Databases(on: self.databaseManager.connectionPool.eventLoop)
+        databases.add(self.databaseManager.connectionPool, as: .init(string: "main"))
+
+        var migrations = Migrations()
+        migrations.add(CreateTodo())
+
+        let migrator = Migrator(
+          databases: databases,
+          migrations: migrations,
+          on: self.databaseManager.connectionPool.eventLoop
+        )
+
+        migrator
+          .setupIfNeeded()
+          .flatMap {
+            migrator.prepareBatch()
+          }.whenSuccess {
             print("Prepared")
           }
-        }
       }) {
         Text("Prepare")
       }
       Button(action: {
         print("Create")
-        self.databaseManager.pool.requestConnection().whenSuccess { (conn) in
-          Todo(title: "hello \(self.count)").save(on: conn).whenComplete {
+        Todo(title: "hello \(self.count)")
+          .save(on: self.databaseManager.connectionPool)
+          .whenSuccess {
             print("Saved")
           }
-          self.count += 1
-        }
+        self.count += 1
       }) {
         Text("Create")
       }
 
       Button(action: {
         print("Fetch")
-        self.databaseManager.pool.requestConnection().whenSuccess { (conn) in
-          Todo.query(on: conn).all().whenSuccess { (todos) in
+        Todo
+          .query(on: self.databaseManager.connectionPool)
+          .all()
+          .whenSuccess { (todos) in
             print(todos.map { $0.title })
           }
-        }
       }) {
         Text("Fetch")
       }
