@@ -9,7 +9,7 @@
 import SwiftUI
 import FluentSQLiteDriver
 
-struct DatabaseManager {
+struct PersistentDatabaseManager {
   let group: MultiThreadedEventLoopGroup
   public let pool: NIOThreadPool
   public var connectionPool: ConnectionPool<SQLiteConnectionSource>!
@@ -17,14 +17,44 @@ struct DatabaseManager {
   init() {
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.pool = .init(numberOfThreads: 2)
-    let db = SQLiteConnectionSource(configuration: .init(storage: .memory), threadPool: self.pool, on: self.group.next())
+    let db = SQLiteConnectionSource(
+      configuration: .init(
+        storage: .connection(
+          .file(
+            path: "\(PersistentDatabaseManager.getDocumentsDirectory().path)/default.sqlite"
+          )
+        )
+      ), threadPool: self.pool, on: self.group.next()
+    )
+    self.connectionPool = ConnectionPool(config: .init(maxConnections: 8), source: db)
+  }
+
+  static func getDocumentsDirectory() -> URL {
+      let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+      return paths[0]
+  }
+}
+
+struct InMemoryDatabaseManager {
+  let group: MultiThreadedEventLoopGroup
+  public let pool: NIOThreadPool
+  public var connectionPool: ConnectionPool<SQLiteConnectionSource>!
+
+  init() {
+    self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    self.pool = .init(numberOfThreads: 2)
+    let db = SQLiteConnectionSource(
+      configuration: .init(
+        storage: .connection(.memory)
+      ), threadPool: self.pool, on: self.group.next()
+    )
     self.connectionPool = ConnectionPool(config: .init(maxConnections: 8), source: db)
   }
 }
 
 struct ContentView: View {
   @State var count = 0
-  let databaseManager = DatabaseManager()
+  let databaseManager = PersistentDatabaseManager()
 
   var body: some View {
     Group {
