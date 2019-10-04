@@ -15,6 +15,7 @@
 		9621A36A2345ED8600CC1C05 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9621A3682345ED8600CC1C05 /* LaunchScreen.storyboard */; };
 		9621A3732345EDF100CC1C05 /* iOSFluentPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 9621A3722345EDF100CC1C05 /* iOSFluentPackage */; };
 		9621A3762345EEB000CC1C05 /* Todo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9621A3752345EEB000CC1C05 /* Todo.swift */; };
+		9621A3872346DB3C00CC1C05 /* CurrentCount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9621A3862346DB3C00CC1C05 /* CurrentCount.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +28,7 @@
 		9621A3692345ED8600CC1C05 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		9621A36B2345ED8600CC1C05 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9621A3752345EEB000CC1C05 /* Todo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Todo.swift; sourceTree = "<group>"; };
+		9621A3862346DB3C00CC1C05 /* CurrentCount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrentCount.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -92,6 +94,7 @@
 			isa = PBXGroup;
 			children = (
 				9621A3752345EEB000CC1C05 /* Todo.swift */,
+				9621A3862346DB3C00CC1C05 /* CurrentCount.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -170,6 +173,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9621A3872346DB3C00CC1C05 /* CurrentCount.swift in Sources */,
 				9621A35E2345ED8500CC1C05 /* AppDelegate.swift in Sources */,
 				9621A3602345ED8500CC1C05 /* SceneDelegate.swift in Sources */,
 				9621A3622345ED8500CC1C05 /* ContentView.swift in Sources */,

@@ -53,11 +53,31 @@ struct InMemoryDatabaseManager {
 }
 
 struct ContentView: View {
-  @State var count = 0
   let databaseManager = PersistentDatabaseManager()
 
   var body: some View {
     Group {
+      Button(action: {
+        print("Revert")
+        var databases = Databases(on: self.databaseManager.connectionPool.eventLoop)
+        databases.add(self.databaseManager.connectionPool, as: .init(string: "main"))
+
+        var migrations = Migrations()
+        migrations.add(CreateTodo())
+        migrations.add(CreateCurrentCount())
+
+        let migrator = Migrator(
+          databases: databases,
+          migrations: migrations,
+          on: self.databaseManager.connectionPool.eventLoop
+        )
+
+        migrator.revertAllBatches().whenSuccess {
+          print("Reverted")
+        }
+      }) {
+        Text("Revert")
+      }
       Button(action: {
         print("Prepare")
         var databases = Databases(on: self.databaseManager.connectionPool.eventLoop)
@@ -65,6 +85,7 @@ struct ContentView: View {
 
         var migrations = Migrations()
         migrations.add(CreateTodo())
+        migrations.add(CreateCurrentCount())
 
         let migrator = Migrator(
           databases: databases,
@@ -84,12 +105,20 @@ struct ContentView: View {
       }
       Button(action: {
         print("Create")
-        Todo(title: "hello \(self.count)")
-          .save(on: self.databaseManager.connectionPool)
-          .whenSuccess {
-            print("Saved")
-          }
-        self.count += 1
+        CurrentCount.query(on: self.databaseManager.connectionPool).all().map { (counts: [CurrentCount]) -> Int in
+          return counts.max { $0.count < $1.count }?.count ?? 0
+        }.flatMap { count in
+          return Todo(title: "hello \(count)")
+            .save(on: self.databaseManager.connectionPool)
+            .map {
+              print("Saved")
+              return count
+            }
+        }.whenSuccess {
+          CurrentCount(count: $0 + 1)
+            .save(on: self.databaseManager.connectionPool)
+            .whenSuccess { print("Current count updated") }
+        }
       }) {
         Text("Create")
       }
